@@ -10,3 +10,4 @@ class apirespnse {
         this.success = statuscode < 400
     }
 }
+export {apirespnse}
