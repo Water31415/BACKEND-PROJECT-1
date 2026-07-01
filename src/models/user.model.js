@@ -1,16 +1,16 @@
 import mongoose , {Schema}from "mongoose";
-import JsonWebTokenError from "jsonwebtoken/lib/JsonWebTokenError.js";
+import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
 
 const userSchema = new Schema({
-    username :{
+    username:{
         type : String,
         required : true,
         unique: true,
         trim : true,
         index : true
     },
-    email :{
+    email:{
         type : String,
         required : true,
         unique: true,
@@ -21,16 +21,16 @@ const userSchema = new Schema({
         required : true,
         trim : true,
     },
-    avatar :{
+    avatar:{
         type: String,
         required : true,
 
     },
-    coverImage :{
+    coverImage:{
         type: String,
 
     },
-    watchHistory :[
+    watchHistory:[
      {
             type : Schema.Types.ObjectId,
             ref: "video"
@@ -41,22 +41,23 @@ const userSchema = new Schema({
         required: [true,`password is required`]
 
     },
-    refreshToken :{
+    refreshToken:{
         type : String
     }
 },{timestamps:true})
 
 userSchema.pre("save",async function(next){
     
-    if(!this.isModified("password")) return next();
-        this.password=bcrypt.hash(this.password,10)
-    next()
+    if(!this.isModified("password")) return next;
+
+    this.password= await bcrypt.hash(this.password,10)
+    next; 
 })
 userSchema.methods.isPasswordcorrect =async function(password){
     return await bcrypt.compare(password,this.password)
 }
 
-userSchema.method.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function(){
 
     return JsonWebTokenError.sign(
         {
@@ -75,7 +76,7 @@ userSchema.method.generateAccessToken = function(){
 
 userSchema.method.generateRefreshToken = function(){
 
-    return JsonWebTokenError.sign(
+    return jwt.sign(
         {
             id: this.id,
             email:this.email,
