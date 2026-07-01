@@ -1,5 +1,5 @@
 import mongoose , {Schema}from "mongoose";
-import JsonWebTokenError from "jsonwebtoken/lib/JsonWebTokenError";
+import JsonWebTokenError from "jsonwebtoken/lib/JsonWebTokenError.js";
 import bcrypt from "bcrypt"
 
 const userSchema = new Schema({
