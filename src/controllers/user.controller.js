@@ -178,8 +178,75 @@ const refreshAccessToken = asyncHandler(async (req,res) => {
     
     throw new apierror(401,error?.message)
 }})
+
+const changeCurrentPassword = asyncHandler(async (req,res) => {
+    const {oldPassword,newPassword}= req.body
+    const user = await User.findById(req.user?.id)
+    const isPasswordcorrect= await user.isPasswordcorrect(oldPassword)
+    if(!isPasswordcorrect){
+        throw new apierror(400,"WRONG PASSWORD")
+    }
+     user.password = newPassword ;
+    await user.save({validateBeforeSave: false})
+    return res
+    .status(200)
+    .json(
+         new apirespnse(200,"PASSWORD IS SET SUCCESSFULLY"))
+})
+   
+
+const currentUser = asyncHandler(async (req,res) => {
+        return res.status(200)
+        .json(
+            new apirespnse(200,req.user,"current user fetched"))})
+
+const updateAccountDetails = asyncHandler(async (req,res) => {
+        const{Fullname,email} =req.body
+        
+        if(!(Fullname || email)){
+            throw new apierror (401,"ALL FIEDS ARE REQUIRED")
+        }
+        const user=await User.findByIdAndUpdate(
+            req.user?.id,
+            {
+                $set :{Fullname: Fullname,email : email}
+            },
+            {new :true}
+        ).select("-password")
+        return res.status(200)
+        .json(
+            new apirespnse(200,user,"ACCOUNT DETAILS UPDATTED SUCCESFULLY")
+        )
+        
+    })
+const updateAvatarImage = asyncHandler(async (req,res) => {
+    const avatarLocalPath = req.file?.path
+    if(!avatarLocalPath){
+        throw new apierror(400,"FILE MISSING")
+    }
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    if(!avatar.url){
+        throw new apierror(400,"ERROR ON UPLOADING FILE")
+    }
+    const user = await User.findByIdAndUpdate
+    (req.user?.id,
+            {
+                $set : {avatar:avatar.url}
+            },{new: true}
+    ).select("-password")
+    return res.status(200)
+            .json(
+                new apirespnse (200,user,"AVATAR UPDATED SUCCESSFULLY")
+            )
+})
+        
 export { loginUser
-    ,logoutUser,refreshAccessToken
+    ,logoutUser
+    ,refreshAccessToken
+    ,changeCurrentPassword
+    ,currentUser
+    ,updateAccountDetails
+    ,registerUser
+    ,updateAvatarImage
 }
 
-export {registerUser}
