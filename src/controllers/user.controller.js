@@ -4,6 +4,7 @@ import {User} from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { apirespnse } from "../utils/apiresponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 
 const generateRefresshAndAccessTokens = async (userId) => {
@@ -239,6 +240,112 @@ const updateAvatarImage = asyncHandler(async (req,res) => {
                 new apirespnse (200,user,"AVATAR UPDATED SUCCESSFULLY")
             )
 })
+const getUserChannelProfile = asyncHandler(async (req,res) => 
+    {
+        const {username } = req.params 
+        if (!username) {
+            throw new apierror(400 , " USERNAME IS MISSING")
+            
+        }
+        const channel = await User.aggregate([
+            {
+                $match: {
+                    username : username?.toLowerCase()
+                }
+            },{
+                $lookup: {
+                    from : "subscriptions",
+                    localField : "_id",
+                    as : "subscribers" 
+                }
+            },{
+                $lookup: {
+                    from : "subscriptions",
+                    localField : "_id",
+                    foreignField : "subscriber",
+                    as : "subscribedTo"
+
+                }
+            },{
+                $addFields : {
+                    subscribersCount :{
+                        $size : "$subscribers"},
+                        channelsSubscribedToCount :{
+                            $size : "$subscribedTo"
+                        },
+                        isSubscribed :{
+                            $cond : {
+                                if : {$in : [req.user?._id,"$subscribers.subscriber"]},
+                                then  : true , 
+                                else : false
+
+                            }
+                        }
+                }
+            },{
+                $project : {
+                    Fullname : 1,
+                    username : 1,
+                    subscribersCount : 1,
+                    isSubscribed : 1,
+                    avatar : 1,
+                    coverImage : 1,
+                    email :1
+                }
+            }
+        ])
+        console.log ( channel)
+        if ( !channel?.length) {
+            throw new apierror(404,"CHANNEL DOESNT EXIST")
+        }
+        return res.status(200)
+        .json (
+            new apirespnse(200,channel[0],"USER FECTHED SUCCESSFULLY")
+        )
+})
+const getWatchHistory = asyncHandler(async (req,res) => 
+    {
+        const user = await User.aggregate([{
+            $match: {
+                id : new mongoose.Types.ObjectId(req.user.id)
+            }},{
+                $lookup : {
+                    from : "videos",
+                    localField : "watchHistory",
+                    foreignField : "_id",
+                    as : "watchHistory",
+                    pipeline : [{
+                        $lookup : {
+                            from : "users",
+                            localField : "owner",
+                            foreignField : "_id",
+                            as : "owner",
+                            pipeline : [
+                                {
+                                    $project : {
+                                        Fullname : 1,
+                                        username : 1,
+                                        avatar : 1
+                                    }
+                                }
+                            ]
+                        }
+                    },{
+                         $addFields : {
+                            owner : {
+                                $first : "$owner"
+                            }
+                        }
+                    }]
+                }
+            }
+        ])
+        return res.status(200)
+            .json(
+                new apirespnse(200,user[0].watchHistory,"WATCH HISTORY FETCHED")
+            )
+})
+
         
 export { loginUser
     ,logoutUser
@@ -247,6 +354,8 @@ export { loginUser
     ,currentUser
     ,updateAccountDetails
     ,registerUser
-    ,updateAvatarImage
+    ,updateAvatarImage,
+    getUserChannelProfile,
+    getWatchHistory
 }
 
