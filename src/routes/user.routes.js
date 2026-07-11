@@ -37,7 +37,7 @@ router.route("/currentUser").get(verifyJWT,currentUser)
 router.route("/updateAccountDetails").patch(verifyJWT,updateAccountDetails)
 router.route('/updateAvatarImage').patch(verifyJWT,uploadImageOnMulter.single("avatar"),updateAvatarImage)
  
-router.route("/c/:username").get(verifyJWT.getUserChannelProfile)
+router.route("/c/:username").get(verifyJWT,getUserChannelProfile)
 router.route("/history").get(verifyJWT,getWatchHistory)
 
 export default router
